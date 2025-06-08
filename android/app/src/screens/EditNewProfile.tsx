@@ -1,115 +1,166 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, StyleSheet, TouchableOpacity,
-  Image, Alert, Platform
+  Image, Alert, Switch, ScrollView
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { launchImageLibrary } from 'react-native-image-picker';
 import defaultProfile from '../icon/profile.png';
+import { useTheme } from '../context/ThemeSwitch';
 
-export default function EditProfileScreen({ navigation }: any) {
-  const [username, setUsername] = useState('');
-  const [phone, setPhone] = useState('');
+export default function EditNewProfile({ navigation }: any) {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [userId, setUserId] = useState('');
+  const [photo, setPhoto] = useState<string | null>(null);
+  const { isDarkMode, toggleTheme } = useTheme();
 
   useEffect(() => {
-  const loadUserData = async () => {
-    const storedId = await AsyncStorage.getItem('userId');
-    const storedName = await AsyncStorage.getItem('userName');
-    const storedImage = await AsyncStorage.getItem('userProfile');
+    const loadProfile = async () => {
+      const storedName = await AsyncStorage.getItem('userName');
+      const storedEmail = await AsyncStorage.getItem('userEmail');
+      const storedPhoto = await AsyncStorage.getItem('userProfile');
+      if (storedName) setName(storedName);
+      if (storedEmail) setEmail(storedEmail);
+      if (storedPhoto) setPhoto(storedPhoto);
+    };
+    loadProfile();
+  }, []);
 
-    if (storedName) setUsername(storedName);
-    if (storedImage) setProfileImage(storedImage);
-    if (storedId) setUserId(storedId); // ini tambahan
-  };
-  loadUserData();
-}, []);
+  const pickImage = async () => {
+    const options = {
+      mediaType: 'photo' as const,
+      maxWidth: 300,
+      maxHeight: 300,
+      // quality: 'high' as const, // <- ini dia yang bener!
+    };
 
-  const handleSelectImage = async () => {
-    const result = await launchImageLibrary({
-      mediaType: 'photo',
-      quality: 0.7,
-      selectionLimit: 1
+    launchImageLibrary(options, async (response) => {
+      if (response.didCancel) return;
+      if (response.errorCode) {
+        Alert.alert('Image Picker Error', response.errorMessage || 'Unknown error');
+        return;
+      }
+
+      const uri = response.assets?.[0]?.uri;
+      if (uri) {
+        setPhoto(uri);
+        await AsyncStorage.setItem('userProfile', uri);
+      }
     });
+  };
 
-    if (result.didCancel) return;
-    if (result.errorMessage) {
-      Alert.alert('Error', result.errorMessage);
-      return;
-    }
+  const saveProfile = async () => {
+    await AsyncStorage.setItem('userName', name);
+    await AsyncStorage.setItem('userEmail', email);
+    alert('Profil disimpan');
+  };
 
-    const uri = result.assets?.[0]?.uri;
-    if (uri) {
-      setProfileImage(uri);
-      await AsyncStorage.setItem('userProfile', uri);
-    }
+  const signOut = async () => {
+    await AsyncStorage.clear();
+    navigation.replace('Login');
   };
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity onPress={() => navigation.goBack()}>
-        <Text style={styles.back}>←</Text>
-      </TouchableOpacity>
-
-      <Text style={styles.title}>Edit My Profile</Text>
-
-      <TouchableOpacity onPress={handleSelectImage}>
+    <ScrollView contentContainerStyle={[styles.container, { backgroundColor: isDarkMode ? '#121212' : '#fff' }]}>
+      <TouchableOpacity onPress={pickImage} style={styles.imagePicker}>
         <Image
-            source={profileImage ? { uri: profileImage } : defaultProfile}
-            style={styles.avatar}
+          source={photo ? { uri: photo } : defaultProfile}
+          style={styles.avatar}
         />
-        <Text style={styles.editText}>Edit Photo</Text>
+        <Text style={{ color: isDarkMode ? '#ccc' : '#666' }}>Tap to change photo</Text>
       </TouchableOpacity>
 
-      <Text style={styles.userId}>ID: {userId}</Text>
+      <Text style={[styles.label, { color: isDarkMode ? '#fff' : '#000' }]}>Name</Text>
+      <TextInput
+        style={[styles.input, { backgroundColor: isDarkMode ? '#2a2a2a' : '#f1f5f9', color: isDarkMode ? '#fff' : '#000' }]}
+        value={name}
+        onChangeText={setName}
+        placeholder="Your name"
+        placeholderTextColor={isDarkMode ? '#aaa' : '#888'}
+      />
 
-      <Text style={styles.label}>Username</Text>
-      <TextInput style={styles.input} value={username} onChangeText={setUsername} />
+      <Text style={[styles.label, { color: isDarkMode ? '#fff' : '#000' }]}>Email</Text>
+      <TextInput
+        style={[styles.input, { backgroundColor: isDarkMode ? '#2a2a2a' : '#f1f5f9', color: isDarkMode ? '#fff' : '#000' }]}
+        value={email}
+        onChangeText={setEmail}
+        placeholder="Your email"
+        placeholderTextColor={isDarkMode ? '#aaa' : '#888'}
+        keyboardType="email-address"
+      />
 
-      <Text style={styles.label}>Phone</Text>
-      <TextInput style={styles.input} keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 16, alignSelf: 'flex-start' }}>
+        <Text style={{ color: isDarkMode ? '#fff' : '#000', marginRight: 10 }}>Dark Mode</Text>
+        <Switch
+          value={isDarkMode}
+          onValueChange={toggleTheme}
+          trackColor={{ false: '#767577', true: '#81b0ff' }}
+          thumbColor={isDarkMode ? '#fff' : '#f4f3f4'}
+        />
+      </View>
 
-      <Text style={styles.label}>Email Address</Text>
-      <TextInput style={styles.input} keyboardType="email-address" value={email} onChangeText={setEmail} />
-
-      <TouchableOpacity style={styles.button}>
-        <Text style={styles.buttonText}>Update Profile</Text>
+      <TouchableOpacity style={styles.saveButton} onPress={saveProfile}>
+        <Text style={styles.saveButtonText}>Simpan</Text>
       </TouchableOpacity>
-    </View>
+
+      <TouchableOpacity onPress={signOut} style={styles.signOutButton}>
+        <Text style={styles.signOutText}>Sign Out</Text>
+      </TouchableOpacity>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#DCEAFF', padding: 20 },
-  back: { fontSize: 24, color: '#333' },
-  title: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginVertical: 10 },
+  container: {
+    padding: 20,
+    alignItems: 'center',
+    flexGrow: 1
+  },
+  imagePicker: {
+    alignItems: 'center',
+    marginBottom: 20
+  },
   avatar: {
-    width: 100, height: 100, borderRadius: 50,
-    alignSelf: 'center', marginTop: 10
-  },
-  editText: {
-    textAlign: 'center',
-    color: '#4E6EF2',
-    fontSize: 12,
-    marginTop: 4
-  },
-  userId: { textAlign: 'center', color: '#888', marginBottom: 20 },
-  label: { fontWeight: '600', marginTop: 10 },
-  input: {
-    borderWidth: 1,
-    borderColor: '#999',
-    borderRadius: 10,
-    padding: 10,
-    backgroundColor: '#fff',
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     marginBottom: 10
   },
-  button: {
-    backgroundColor: '#4E6EF2',
-    padding: 15,
-    borderRadius: 10,
-    marginTop: 20
+  label: {
+    alignSelf: 'flex-start',
+    marginBottom: 5,
+    fontWeight: '600',
+    fontSize: 14
   },
-  buttonText: { color: '#fff', textAlign: 'center', fontWeight: 'bold' }
+  input: {
+    width: '100%',
+    padding: 14,
+    borderRadius: 10,
+    marginBottom: 16
+  },
+  saveButton: {
+    backgroundColor: '#2563eb',
+    paddingVertical: 14,
+    borderRadius: 10,
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 10
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontWeight: 'bold'
+  },
+  signOutButton: {
+    backgroundColor: '#DC2626',
+    paddingVertical: 14,
+    borderRadius: 10,
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 40
+  },
+  signOutText: {
+    color: '#fff',
+    fontWeight: 'bold'
+  }
 });

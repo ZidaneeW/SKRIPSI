@@ -1,103 +1,361 @@
-// import React from 'react';
-// import { View, Text, TextInput, Button } from 'react-native';
-
-// export default function RegisterScreen({ navigation }) {
-//   return (
-//     <View style={{ padding: 20 }}>
-//       <Text style={{ fontSize: 24, fontWeight: 'bold' }}>Welcome to Finance Tracker</Text>
-//       <Text style={{ marginTop: 10 }}>Register your account below</Text>
-//       <TextInput placeholder="Email" style={{ borderWidth: 1, marginVertical: 10 }} />
-//       <TextInput placeholder="Password" secureTextEntry style={{ borderWidth: 1, marginBottom: 10 }} />
-//       <Button title="Register" onPress={() => navigation.navigate('Login')} />
-//       <Text style={{ marginTop: 20 }}>Already registered?</Text>
-//       <Button title="Go to Login" onPress={() => navigation.navigate('Login')} />
-//     </View>
-//   );
-// }
-
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Platform,
+  Image,
+  Switch
+} from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { Picker } from '@react-native-picker/picker';
 import { insertUser } from '../db/db';
 
-export function RegisterScreen({ navigation }: any) {
+const RegisterScreen = ({ navigation }: any) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [dob, setDob] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [gender, setGender] = useState('');
+  const [phone, setPhone] = useState('');
+  const [job, setJob] = useState('');
+  const [jobDescription, setJobDescription] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<{ name: string; email: string; password: string }>({
-    name: '',
-    email: '',
-    password: ''
-});
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  const onChangeDate = (event: any, selectedDate: any) => {
+    const currentDate = selectedDate || new Date();
+    setShowDatePicker(Platform.OS === 'ios');
+    const dateString = currentDate.toISOString().split('T')[0];
+    setDob(dateString);
+  };
 
   const handleRegister = () => {
-    insertUser(name, email, password,
-  () => {
-    Alert.alert('Success', 'Account created successfully');
-    navigation.navigate('Login');
-  },
-  (errorMessage) => {
-  Alert.alert('Validation Error', errorMessage);
-
-  if (errorMessage.includes('Nama')) {
-    setError(prev => ({ ...prev, name: errorMessage }));
-  } else if (errorMessage.includes('Email')) {
-    setError(prev => ({ ...prev, email: errorMessage }));
-  } else if (errorMessage.includes('Password')) {
-    setError(prev => ({ ...prev, password: errorMessage }));
-  } else {
-    // fallback: tampilkan di bawah email jika tidak dikenali
-    setError(prev => ({ ...prev, email: errorMessage }));
-  }
-}
-);
+    if (!name || !email || !password || !dob || !gender || !phone || !job || (['Karyawan Swasta', 'Wirausahawan', 'Lainnya'].includes(job) && !jobDescription)) {
+      alert('Semua field wajib diisi!');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setPasswordError('Confirm password tidak sama dengan password');
+      return;
+    }
+    insertUser(
+      name,
+      email,
+      password,
+      dob,
+      gender,
+      phone,
+      job + (jobDescription ? ` - ${jobDescription}` : ''),
+      () => {
+        alert('Akun berhasil dibuat');
+        navigation.navigate('Login');
+      },
+      (errorMessage) => {
+        alert('Akun Gagal Dibuat: ' + errorMessage);
+      }
+    );
   };
 
   return (
-    <View style={registerStyles.container}>
-      <Text style={registerStyles.title}>Register</Text>
+    <ScrollView contentContainerStyle={[styles.container, { backgroundColor: isDarkMode ? '#121212' : '#fff' }]}>
+      <View style={[styles.header, { backgroundColor: isDarkMode ? '#121212' : '#fff' }]}>
+        <View style={styles.headerContent}>
+          <Text style={[styles.title, { color: isDarkMode ? '#fff' : '#000' }]}>Register</Text>
+          <View style={styles.darkModeToggle}>
+            <Text style={{ color: isDarkMode ? '#fff' : '#000', fontFamily: 'Poppins', marginRight: 10 }}>Dark Mode</Text>
+            <Switch
+              value={isDarkMode}
+              onValueChange={setIsDarkMode}
+              trackColor={{ false: '#767577', true: '#81b0ff' }}
+              thumbColor={isDarkMode ? '#fff' : '#f4f3f4'}
+            />
+          </View>
+        </View>
+      </View>
 
-      <TextInput placeholder="Name" style={registerStyles.input} onChangeText={setName} value={name} />
-      <TextInput placeholder="Email" style={registerStyles.input} keyboardType="email-address" onChangeText={setEmail} value={email} />
-      <TextInput placeholder="Password" style={registerStyles.input} secureTextEntry onChangeText={setPassword} value={password} />
+      <View style={styles.body}>
+        {[
+          { label: 'Nama', value: name, setter: setName, placeholder: 'Nama', keyboardType: 'default' },
+          { label: 'Email', value: email, setter: setEmail, placeholder: 'example@email.com', keyboardType: 'email-address' }
+        ].map((field, idx) => (
+          <View key={idx}>
+            <Text style={[styles.label, { color: isDarkMode ? '#fff' : '#000' }]}>{field.label}</Text>
+            <View style={[styles.inputWrapper, {
+              backgroundColor: isDarkMode ? '#2a2a2a' : '#fff',
+              borderColor: isDarkMode ? 'transparent' : '#1d60e6',
+              borderWidth: 1
+            }]}>
+              <TextInput
+                placeholder={field.placeholder}
+                placeholderTextColor={isDarkMode ? '#888' : '#aaa'}
+                style={[styles.input, { color: isDarkMode ? '#fff' : '#000' }]}
+                keyboardType={field.keyboardType as 'default' | 'email-address' | 'numeric' | 'phone-pad'}
+                value={field.value}
+                onChangeText={field.setter}
+              />
+            </View>
+          </View>
+        ))}
 
-      <TouchableOpacity style={registerStyles.button} onPress={handleRegister}>
-        <Text style={registerStyles.buttonText}>Create account</Text>
-      </TouchableOpacity>
+        <Text style={[styles.label, { color: isDarkMode ? '#fff' : '#000' }]}>Tanggal Lahir</Text>
+        <TouchableOpacity onPress={() => setShowDatePicker(true)} style={[styles.inputWrapper, {
+          backgroundColor: isDarkMode ? '#2a2a2a' : '#fff',
+          borderColor: isDarkMode ? 'transparent' : '#1d60e6',
+          borderWidth: 1
+        }]}>
+          <Text style={[styles.input, { color: isDarkMode ? '#fff' : '#000' }]}>{dob || 'Pilih Tanggal Lahir'}</Text>
+        </TouchableOpacity>
+        {showDatePicker && (
+          <DateTimePicker
+            value={new Date()}
+            mode="date"
+            display="default"
+            onChange={onChangeDate}
+          />
+        )}
 
-      <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-        <Text style={registerStyles.link}>Already have an account? Login</Text>
-      </TouchableOpacity>
+        <Text style={[styles.label, { color: isDarkMode ? '#fff' : '#000' }]}>Jenis Kelamin</Text>
+        <View style={styles.genderWrapper}>
+          {['Laki-laki', 'Perempuan'].map(option => (
+            <TouchableOpacity
+              key={option}
+              style={[styles.radioButton, gender === option && styles.radioButtonSelected]}
+              onPress={() => setGender(option)}
+            >
+              <View style={styles.radioCircle}>
+                {gender === option && <View style={styles.radioDot} />}
+              </View>
+              <Text style={[styles.radioLabel, { color: isDarkMode ? '#fff' : '#000' }]}>{option}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
 
-      {/* <TouchableOpacity onPress={() => navigation.navigate('LoginAsAdmin')}>
-        <Text style={registerStyles.link}>Login as admin?</Text>
-      </TouchableOpacity> */}
-    </View>
+        <Text style={[styles.label, { color: isDarkMode ? '#fff' : '#000' }]}>Nomor Telepon</Text>
+        <View style={[styles.inputWrapper, {
+          backgroundColor: isDarkMode ? '#2a2a2a' : '#fff',
+          borderColor: isDarkMode ? 'transparent' : '#1d60e6',
+          borderWidth: 1
+        }]}>
+          <TextInput
+            placeholder="+62"
+            placeholderTextColor={isDarkMode ? '#888' : '#aaa'}
+            style={[styles.input, { color: isDarkMode ? '#fff' : '#000' }]}
+            keyboardType="phone-pad"
+            value={phone}
+            onChangeText={(text) => {
+              let digits = text.replace(/[^0-9]/g, '');
+              if (digits.startsWith('0')) digits = digits.slice(1);
+              else if (digits.startsWith('62')) digits = digits.slice(2);
+              digits = digits.slice(0, 12);
+              let formatted = '+62 ';
+              if (digits.length <= 3) formatted += digits;
+              else if (digits.length <= 7) formatted += digits.slice(0, 3) + '-' + digits.slice(3);
+              else formatted += digits.slice(0, 3) + '-' + digits.slice(3, 7) + '-' + digits.slice(7);
+              setPhone(formatted);
+            }}
+          />
+        </View>
+
+        <Text style={[styles.label, { color: isDarkMode ? '#fff' : '#000' }]}>Pekerjaan</Text>
+        <View style={[styles.inputWrapper, {
+          backgroundColor: isDarkMode ? '#2a2a2a' : '#fff',
+          borderColor: isDarkMode ? 'transparent' : '#1d60e6',
+          borderWidth: 1
+        }]}>
+          <Picker
+            selectedValue={job}
+            style={{ flex: 1, color: isDarkMode ? '#fff' : '#000' }}
+            onValueChange={(itemValue) => setJob(itemValue)}>
+            <Picker.Item label="Pilih pekerjaan" value="" />
+            <Picker.Item label="Mahasiswa" value="Mahasiswa" />
+            <Picker.Item label="Karyawan Swasta" value="Karyawan Swasta" />
+            <Picker.Item label="Wirausahawan" value="Wirausahawan" />
+            <Picker.Item label="Lainnya" value="Lainnya" />
+          </Picker>
+        </View>
+
+        {(job === 'Karyawan Swasta' || job === 'Wirausahawan' || job === 'Lainnya') && (
+          <View style={[styles.inputWrapper, {
+            backgroundColor: isDarkMode ? '#2a2a2a' : '#fff',
+            borderColor: isDarkMode ? 'transparent' : '#1d60e6',
+            borderWidth: 1
+          }]}>
+            <TextInput
+              placeholder={job === 'Karyawan Swasta' ? 'Deskripsi Pekerjaan' : job === 'Wirausahawan' ? 'Bidang Usaha' : 'Deskripsi Pekerjaan'}
+              placeholderTextColor={isDarkMode ? '#888' : '#aaa'}
+              style={[styles.input, { color: isDarkMode ? '#fff' : '#000' }]}
+              onChangeText={setJobDescription}
+              value={jobDescription}
+            />
+          </View>
+        )}
+
+        {[{
+          label: 'Password', value: password, set: setPassword, show: showPassword, toggle: () => setShowPassword(!showPassword), isConfirm: false
+        }, {
+          label: 'Confirm Password', value: confirmPassword, set: setConfirmPassword, show: showConfirmPassword, toggle: () => setShowConfirmPassword(!showConfirmPassword), isConfirm: true
+        }].map((field, idx) => (
+          <View key={idx}>
+            <Text style={[styles.label, { color: isDarkMode ? '#fff' : '#000' }]}>{field.label}</Text>
+            <View style={[styles.inputWrapper, {
+              backgroundColor: isDarkMode ? '#2a2a2a' : '#fff',
+              borderColor: isDarkMode ? 'transparent' : '#1d60e6',
+              borderWidth: 1
+            }]}>
+              <TextInput
+                placeholder={field.label}
+                placeholderTextColor={isDarkMode ? '#888' : '#aaa'}
+                secureTextEntry={!field.show}
+                style={[styles.input, { color: isDarkMode ? '#fff' : '#000' }]}
+                value={field.value}
+                onChangeText={(text) => {
+                  field.set(text);
+                  if (field.isConfirm && password !== text) {
+                    setPasswordError('Confirm password tidak sama dengan password');
+                  } else if (!field.isConfirm && confirmPassword && text !== confirmPassword) {
+                    setPasswordError('Confirm password tidak sama dengan password');
+                  } else {
+                    setPasswordError('');
+                  }
+                }}
+              />
+              <TouchableOpacity onPress={field.toggle}>
+                <Image
+                  source={field.show ? require('../icon/hide.png') : require('../icon/show.png')}
+                  style={{ width: 20, height: 20, tintColor: isDarkMode ? '#ccc' : '#666' }}
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
+        ))}
+
+        {passwordError ? <Text style={{ color: 'red' }}>{passwordError}</Text> : null}
+
+        <TouchableOpacity style={styles.button} onPress={handleRegister}>
+          <Text style={styles.buttonText}>Daftar</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => navigation.navigate('Login')} style={{ marginTop: 20 }}>
+          <Text style={[styles.bottomText, { color: isDarkMode ? '#bbb' : '#666' }]}>Sudah punya akun? <Text style={styles.signUpLink}>Login di sini</Text></Text>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
   );
-}
+};
 
-const registerStyles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fff', padding: 24, justifyContent: 'center' },
-  title: { fontSize: 22, fontWeight: 'bold', marginBottom: 24, textAlign: 'left' },
+const styles = StyleSheet.create({
+  container: {
+    flexGrow: 1
+  },
+  header: {
+    paddingBottom: 20,
+    paddingTop: 40,
+    paddingHorizontal: 20,
+    borderBottomLeftRadius: 50,
+    borderBottomRightRadius: 50,
+    backgroundColor: '#fff'
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  darkModeToggle: {
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  body: {
+    paddingTop: 20,
+    paddingHorizontal: 30
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    fontFamily: 'Poppins'
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 5,
+    fontFamily: 'Poppins'
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 20,
+    paddingHorizontal: 15,
+    marginBottom: 15
+  },
   input: {
-    backgroundColor: '#f1f5f9',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 8,
-    marginBottom: 16,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#e2e8f0'
+    flex: 1,
+    height: 45,
+    fontFamily: 'Poppins'
   },
   button: {
-    backgroundColor: '#2563eb',
-    paddingVertical: 14,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 8,
-    elevation: 2
+    backgroundColor: '#1d60e6',
+    paddingVertical: 12,
+    borderRadius: 20,
+    marginTop: 10
   },
-  buttonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
-  link: { marginTop: 20, textAlign: 'center', color: '#2563eb', fontWeight: '500' }
+  buttonText: {
+    color: '#fff',
+    textAlign: 'center',
+    fontWeight: 'bold',
+    fontFamily: 'Poppins'
+  },
+  bottomText: {
+    textAlign: 'center',
+    marginTop: 10,
+    fontFamily: 'Poppins'
+  },
+  signUpLink: {
+    color: '#3176f6',
+    fontWeight: 'bold',
+    fontFamily: 'Poppins'
+  },
+  genderWrapper: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 15,
+    paddingHorizontal: 10
+  },
+  radioButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: 10
+  },
+  radioButtonSelected: {
+    backgroundColor: '#e0ecff'
+  },
+  radioCircle: {
+    height: 20,
+    width: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#2563eb',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 8
+  },
+  radioDot: {
+    height: 10,
+    width: 10,
+    borderRadius: 5,
+    backgroundColor: '#2563eb'
+  },
+  radioLabel: {
+    fontSize: 14,
+    fontFamily: 'Poppins'
+  }
 });
 
 export default RegisterScreen;

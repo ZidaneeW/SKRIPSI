@@ -15,6 +15,7 @@ import AdminUserList from './android/app/src/screens/AdminUserList';
 import EditNewProfile from './android/app/src/screens/EditNewProfile';
 
 import { createUserTable, createExpenseTable } from './android/app/src/db/db';
+import { ThemeProvider } from './android/app/src/context/ThemeSwitch';
 
 enableScreens();
 const Stack = createNativeStackNavigator();
@@ -39,17 +40,19 @@ export default function App(): JSX.Element {
   }, []);
 
   return (
-    <NavigationContainer>
-      <Stack.Navigator initialRouteName={initialRoute}>
-        <Stack.Screen name="Register" component={RegisterScreen} />
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="Home" component={HomeScreen} />
-        <Stack.Screen name="AddExpense" component={AddExpenseScreen} />
-        <Stack.Screen name="Prediction" component={PredictionScreen} />
-        <Stack.Screen name="Admin" component={AdminUserList} />
-        <Stack.Screen name="LoginAsAdmin" component={LoginAsAdmin} />
-        <Stack.Screen name="EditProfile" component={EditNewProfile} />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <ThemeProvider>
+      <NavigationContainer>
+        <Stack.Navigator initialRouteName={initialRoute}>
+          <Stack.Screen name="Register" component={RegisterScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }}/>
+          <Stack.Screen name="AddExpense" component={AddExpenseScreen}  />
+          <Stack.Screen name="Prediction" component={PredictionScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Admin" component={AdminUserList} />
+          <Stack.Screen name="LoginAsAdmin" component={LoginAsAdmin} />
+          <Stack.Screen name="EditProfile" component={EditNewProfile} />
+        </Stack.Navigator>
+      </NavigationContainer>
+    </ThemeProvider>
   );
 }

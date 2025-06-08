@@ -227,7 +227,11 @@ export const createUserTable = () => {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT,
         email TEXT UNIQUE,
-        password TEXT
+        password TEXT,
+        dob TEXT,
+        gender TEXT,
+        phone TEXT,
+        job TEXT
       )`,
       [],
       () => console.log('✅ User table created'),
@@ -265,37 +269,21 @@ export const insertUser = (
   name: string,
   email: string,
   password: string,
+  dob: string,
+  gender: string,
+  phone: string,
+  job: string,
   onSuccess: () => void,
   onError: (message: string) => void
 ) => {
-  // Validasi input kosong
-  if (!name.trim()) return onError('Nama harus diisi');
-  if (!email.trim()) return onError('Email harus diisi');
-  if (!password.trim()) return onError('Password harus diisi');
-
-  // Validasi panjang dan format
-  if (name.length < 8 || name.length > 20) {
-    return onError('Nama harus 8-20 karakter');
-  }
-  if (!email.includes('@gmail.com')) {
-    return onError('Email harus menggunakan @gmail.com');
-  }
-  if (
-    password.length < 6 ||
-    password.length > 15 ||
-    password.toLowerCase().includes(name.toLowerCase()) ||
-    !/[0-9]/.test(password) ||
-    !/[A-Z]/.test(password) ||
-    !/[a-z]/.test(password)
-  ) {
-    return onError('Password harus 6–15 karakter, mengandung huruf besar & kecil, angka, dan tidak boleh mengandung nama');
+  if (!name || !email || !password || !dob || !gender || !phone || !job) {
+    return onError('Semua field harus diisi');
   }
 
-  // Simpan ke database
   db.transaction(tx => {
     tx.executeSql(
-      'INSERT INTO users (name, email, password) VALUES (?, ?, ?)',
-      [name, email, password],
+      'INSERT INTO users (name, email, password, dob, gender, phone, job) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [name, email, password, dob, gender, phone, job],
       () => {
         console.log('✅ User inserted');
         onSuccess();
@@ -308,6 +296,7 @@ export const insertUser = (
     );
   });
 };
+
 
 //  Login check
 export const checkUserExists = async (
