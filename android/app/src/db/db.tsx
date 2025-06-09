@@ -281,6 +281,8 @@ export const insertUser = (
   }
 
   db.transaction(tx => {
+
+    
     tx.executeSql(
       'INSERT INTO users (name, email, password, dob, gender, phone, job) VALUES (?, ?, ?, ?, ?, ?, ?)',
       [name, email, password, dob, gender, phone, job],

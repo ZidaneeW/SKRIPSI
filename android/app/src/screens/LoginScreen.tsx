@@ -28,7 +28,7 @@ export function LoginScreen({ navigation }: any) {
     if (user && email !== ADMIN_CREDENTIAL.email) {
       await AsyncStorage.setItem('userId', user.id.toString());
       await AsyncStorage.setItem('userName', user.name);
-      navigation.navigate('Home');
+      navigation.navigate('Main');
     } else if (email === ADMIN_CREDENTIAL.email && password === ADMIN_CREDENTIAL.password) {
       navigation.navigate('Admin');
     } else {

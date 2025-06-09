@@ -46,6 +46,7 @@ const RegisterScreen = ({ navigation }: any) => {
       setPasswordError('Confirm password tidak sama dengan password');
       return;
     }
+    const cleanedEmail = email.trim().toLowerCase();
     insertUser(
       name,
       email,
