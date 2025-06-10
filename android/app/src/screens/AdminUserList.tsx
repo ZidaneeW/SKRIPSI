@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
-import { getAllUsers } from '../db/db';
+import { getAllUsers, deleteAllUsersExceptAdmin } from '../db/db';
 
 type User = {
   id: number;
@@ -12,11 +12,14 @@ const AdminUserList = () => {
   const [users, setUsers] = useState<User[]>([]);
 
   useEffect(() => {
-    getAllUsers(
-      (fetchedUsers) => setUsers(fetchedUsers),
-      (err) => console.log('Error fetching users:', err)
-    );
-  }, []);
+  deleteAllUsersExceptAdmin(
+    () => {
+      console.log('✅ Cleaned user list');
+      getAllUsers(setUsers, console.log);
+    },
+    (err) => console.log('Error delete:', err)
+  );
+}, []);
 
   const renderUser = ({ item }: { item: User }) => (
     <View style={styles.userItem}>

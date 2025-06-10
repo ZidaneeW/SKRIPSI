@@ -197,7 +197,7 @@
 
 // export default db;
 
-import SQLite, { SQLError, Transaction } from 'react-native-sqlite-storage';
+import SQLite, { SQLError, Transaction, openDatabase } from 'react-native-sqlite-storage';
 
 export type User = {
   id: number;
@@ -208,8 +208,9 @@ export type User = {
 
 const db = SQLite.openDatabase(
   {
-    name: 'FinanceTracker.db',
-    location: 'default',
+    name: 'FinanceTrackerBaru.db'
+    // location: 'default',
+    // createFromLocation: 1
   },
   () => {
     console.log('✅ Database opened');
@@ -219,28 +220,34 @@ const db = SQLite.openDatabase(
   }
 );
 
+// SQLite.openDatabase({name: 'FinanceTracker.db', location: 'default'})
+//   .then((db) => {
+//     console.log("Database opened successfully");
+//     console.log("Database path:", db.dbPath); // Coba ini
+//     return db;
+//   })
+//   .catch((error) => {
+//     console.log("ERROR opening database: ", error);
+//   });
+        
+
 //  Create table USERS
 export const createUserTable = () => {
-  db.transaction((tx: Transaction) => {
-    tx.executeSql(
-      `CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
-        email TEXT UNIQUE,
-        password TEXT,
-        dob TEXT,
-        gender TEXT,
-        phone TEXT,
-        job TEXT
-      )`,
-      [],
-      () => console.log('✅ User table created'),
-      (txObj: Transaction, error: SQLError): boolean => {
-        console.log('❌ Failed to create user table:', error);
-        return true;
-      }
-    );
-  });
+  db.transaction(tx => {
+  tx.executeSql('DROP TABLE IF EXISTS users'); // 💣 reset dulu
+  tx.executeSql(
+    `CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT,
+      email TEXT UNIQUE,
+      password TEXT,
+      dob TEXT,
+      gender TEXT,
+      phone TEXT,
+      job TEXT
+    )`, 
+  );
+});
 };
 
 //  Create table EXPENSES
@@ -265,6 +272,27 @@ export const createExpenseTable = () => {
 };
 
 //  Insert new user with validations
+export const deleteAllUsers = (
+  onSuccess: () => void,
+  onError: (err: any) => void
+) => {
+  db.transaction(tx => {
+    tx.executeSql(
+      'DELETE FROM users',
+      [],
+      () => {
+        console.log('🧼 Semua user dihapus');
+        onSuccess();
+      },
+      (_, error) => {
+        console.log('❌ Gagal hapus user:', error);
+        onError(error);
+        return false;
+      }
+    );
+  });
+};
+
 export const insertUser = (
   name: string,
   email: string,
@@ -274,30 +302,36 @@ export const insertUser = (
   phone: string,
   job: string,
   onSuccess: () => void,
-  onError: (message: string) => void
-) => {
-  if (!name || !email || !password || !dob || !gender || !phone || !job) {
-    return onError('Semua field harus diisi');
+  onError: (err: string) => void
+): void => {
+  console.log('📥 INSERT USER TRIGGERED');
+
+  try {
+    db.transaction(tx => {
+      tx.executeSql(
+        'INSERT INTO users (name, email, password, dob, gender, phone, job) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [name, email, password, dob, gender, phone, job],
+        (_, result) => {
+          console.log('✅ INSERT USER SUKSES:', result);
+          onSuccess();
+        },
+        (_, error) => {
+          console.log('❌ INSERT USER GAGAL:', error.message);
+          onError(error.message);
+          return false;
+        }
+      );
+    }, (txError) => {
+      console.log('💥 TRANSACTION FAILED:', txError.message);
+      onError(txError.message);
+    });
+  } catch (e: any) {
+    console.log('💀 FATAL DB ERROR:', e.message);
+    onError(e.message);
   }
-
-  db.transaction(tx => {
-
-    
-    tx.executeSql(
-      'INSERT INTO users (name, email, password, dob, gender, phone, job) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [name, email, password, dob, gender, phone, job],
-      () => {
-        console.log('✅ User inserted');
-        onSuccess();
-      },
-      (_, error) => {
-        console.log('❌ Insert user error:', error);
-        onError('Gagal membuat akun. Email mungkin sudah digunakan.');
-        return false;
-      }
-    );
-  });
 };
+
+
 
 
 //  Login check
@@ -320,6 +354,27 @@ export const checkUserExists = async (
         (_, error) => reject(error)
       );
     });
+  });
+};
+
+export const deleteAllUsersExceptAdmin = (
+  onSuccess: () => void,
+  onError: (err: any) => void
+) => {
+  db.transaction(tx => {
+    tx.executeSql(
+      `DELETE FROM users WHERE email NOT IN (?, ?)`,
+      ['admin@gmail.com', 'zidanebangwicaksono@gmail.com'],
+      () => {
+        console.log('🧼 Semua user kecuali admin & zidane dihapus');
+        onSuccess();
+      },
+      (_, error) => {
+        console.log('❌ Gagal hapus user:', error);
+        onError(error);
+        return false;
+      }
+    );
   });
 };
 

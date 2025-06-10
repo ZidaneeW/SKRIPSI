@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,11 +8,16 @@ import {
   ScrollView,
   Platform,
   Image,
-  Switch
+  Switch, 
+  Alert
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
-import { insertUser } from '../db/db';
+import { insertUser, deleteAllUsers, createUserTable, createExpenseTable, getAllUsers } from '../db/db';
+import { sendOtp } from '../utils/sendOtp';
+import validator from 'validator'; // pastikan sudah install validator
+
+
 
 const RegisterScreen = ({ navigation }: any) => {
   const [name, setName] = useState('');
@@ -37,33 +42,60 @@ const RegisterScreen = ({ navigation }: any) => {
     setDob(dateString);
   };
 
+  useEffect(() => {
+    createUserTable();
+    createExpenseTable();
+  }, []);
+
   const handleRegister = () => {
-    if (!name || !email || !password || !dob || !gender || !phone || !job || (['Karyawan Swasta', 'Wirausahawan', 'Lainnya'].includes(job) && !jobDescription)) {
-      alert('Semua field wajib diisi!');
-      return;
-    }
-    if (password !== confirmPassword) {
-      setPasswordError('Confirm password tidak sama dengan password');
-      return;
-    }
-    const cleanedEmail = email.trim().toLowerCase();
-    insertUser(
-      name,
-      email,
-      password,
-      dob,
-      gender,
-      phone,
-      job + (jobDescription ? ` - ${jobDescription}` : ''),
-      () => {
-        alert('Akun berhasil dibuat');
-        navigation.navigate('Login');
-      },
-      (errorMessage) => {
-        alert('Akun Gagal Dibuat: ' + errorMessage);
-      }
+  if (!name || !email || !password || !dob || !gender || !phone || !job || (['Karyawan Swasta', 'Wirausahawan', 'Lainnya'].includes(job) && !jobDescription)) {
+    alert('Semua field wajib diisi!');
+    return;
+  }
+
+  if (!validator.isEmail(email.trim())) {
+    alert('Format email tidak valid');
+    return;
+  }
+
+  if (password !== confirmPassword) {
+    setPasswordError('Confirm password tidak sama dengan password');
+    return;
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const fullJob = job + (jobDescription ? ` - ${jobDescription}` : '');
+
+  console.log('📦 Siap insert user:', {
+    name, cleanEmail, password, dob, gender, phone, fullJob
+  });
+
+  insertUser(
+    name,
+    cleanEmail,
+    password,
+    dob,
+    gender,
+    phone,
+    fullJob,
+    () => {
+      console.log('✅ Insert sukses, arahkan ke login');
+      console.log('Data user yang baru dimasukkan:', { name, cleanEmail, password, dob, gender, phone, fullJob }); // log user
+      Alert.alert('Sukses', 'Akun berhasil dibuat');
+      getAllUsers(
+      users => console.log(users),
+      e => console.log('❌ GetAllUsers error', e)
     );
-  };
+      navigation.replace('Login');
+    },
+    (err) => {
+      console.log('❌ Insert gagal:', err);
+      Alert.alert('Error', err);
+    }
+  );
+};
+
+
 
   return (
     <ScrollView contentContainerStyle={[styles.container, { backgroundColor: isDarkMode ? '#121212' : '#fff' }]}>
@@ -243,7 +275,17 @@ const RegisterScreen = ({ navigation }: any) => {
         <TouchableOpacity style={styles.button} onPress={handleRegister}>
           <Text style={styles.buttonText}>Daftar</Text>
         </TouchableOpacity>
-
+        <TouchableOpacity
+          onPress={() => {
+          deleteAllUsers(
+          () => alert('Semua data user berhasil dihapus'),
+          (err) => alert('Gagal hapus data: ' + err)
+            );
+          }}
+          style={[styles.button, { backgroundColor: 'red' }]}
+          >
+          <Text style={styles.buttonText}>Reset Semua User</Text>
+        </TouchableOpacity>
         <TouchableOpacity onPress={() => navigation.navigate('Login')} style={{ marginTop: 20 }}>
           <Text style={[styles.bottomText, { color: isDarkMode ? '#bbb' : '#666' }]}>Sudah punya akun? <Text style={styles.signUpLink}>Login di sini</Text></Text>
         </TouchableOpacity>
@@ -360,3 +402,4 @@ const styles = StyleSheet.create({
 });
 
 export default RegisterScreen;
+
