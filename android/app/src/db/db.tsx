@@ -214,6 +214,7 @@ const db = SQLite.openDatabase(
   },
   () => {
     console.log('✅ Database opened');
+    console.log('📁 DB yang dipake:', db);
   },
   error => {
     console.log('❌ Error opening database:', error);
@@ -234,7 +235,7 @@ const db = SQLite.openDatabase(
 //  Create table USERS
 export const createUserTable = () => {
   db.transaction(tx => {
-  tx.executeSql('DROP TABLE IF EXISTS users'); // 💣 reset dulu
+  // tx.executeSql('DROP TABLE IF EXISTS users'); // 💣 reset dulu
   tx.executeSql(
     `CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -245,7 +246,13 @@ export const createUserTable = () => {
       gender TEXT,
       phone TEXT,
       job TEXT
-    )`, 
+    )`,
+    [],
+    () => console.log('📦 DB path:', db.dbname),
+    (_, error) => {
+        console.log('❌ Failed to create expense table:', error);
+        return true; 
+    } // Atau ._dbPath kalau di iOS/Android tertentu
   );
 });
 };

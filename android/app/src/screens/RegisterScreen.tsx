@@ -16,6 +16,8 @@ import { Picker } from '@react-native-picker/picker';
 import { insertUser, deleteAllUsers, createUserTable, createExpenseTable, getAllUsers } from '../db/db';
 import { sendOtp } from '../utils/sendOtp';
 import validator from 'validator'; // pastikan sudah install validator
+import { exportDbToDownload } from '../utils/copyDb'; // pastikan path-nya bener
+
 
 
 
@@ -79,15 +81,21 @@ const RegisterScreen = ({ navigation }: any) => {
     phone,
     fullJob,
     () => {
-      console.log('✅ Insert sukses, arahkan ke login');
-      console.log('Data user yang baru dimasukkan:', { name, cleanEmail, password, dob, gender, phone, fullJob }); // log user
-      Alert.alert('Sukses', 'Akun berhasil dibuat');
-      getAllUsers(
-      users => console.log(users),
-      e => console.log('❌ GetAllUsers error', e)
-    );
-      navigation.replace('Login');
-    },
+  console.log('✅ Insert sukses, arahkan ke login');
+  Alert.alert('Sukses', 'Akun berhasil dibuat');
+
+  // ✅ Tambahkan ini:
+  exportDbToDownload()
+    .then(path => console.log('📤 Auto-export sukses:', path))
+    .catch(err => console.log('❌ Auto-export gagal:', err.message));
+
+  getAllUsers(
+    users => console.log(users),
+    e => console.log('❌ GetAllUsers error', e)
+  );
+
+  navigation.replace('Login');
+},
     (err) => {
       console.log('❌ Insert gagal:', err);
       Alert.alert('Error', err);
@@ -286,6 +294,37 @@ const RegisterScreen = ({ navigation }: any) => {
           >
           <Text style={styles.buttonText}>Reset Semua User</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+  onPress={() => {
+    getAllUsers(
+      users => {
+        console.log('📋 Semua user di DB:', users);
+        Alert.alert('Data dari DB', users.map((u, i) => `${i + 1}. ${u.name} - ${u.email}`).join('\n') || 'Ga ada user');
+      },
+      err => {
+        console.log('❌ Error ambil user:', err);
+        Alert.alert('Gagal ambil data user');
+      }
+    );
+  }}
+  style={[styles.button, { backgroundColor: '#28a745' }]}
+>
+  <Text style={styles.buttonText}>Tampilkan Semua User</Text>
+</TouchableOpacity>
+
+<TouchableOpacity
+  onPress={async () => {
+    try {
+      const path = await exportDbToDownload();
+      Alert.alert('Sukses', `DB diekspor ke ${path}`);
+    } catch (e) {
+      Alert.alert('Gagal', 'Gagal export DB: ' + (e as Error).message);
+    }
+  }}
+  style={[styles.button, { backgroundColor: '#444' }]}
+>
+  <Text style={styles.buttonText}>Export DB ke Download</Text>
+</TouchableOpacity>
         <TouchableOpacity onPress={() => navigation.navigate('Login')} style={{ marginTop: 20 }}>
           <Text style={[styles.bottomText, { color: isDarkMode ? '#bbb' : '#666' }]}>Sudah punya akun? <Text style={styles.signUpLink}>Login di sini</Text></Text>
         </TouchableOpacity>
