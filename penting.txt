@@ -40,3 +40,7 @@ npm install @react-native-async-storage/async-storage -> Buat storage simpen use
 - npm install react-native-pie
 - npm install -g kill-port
 - grep -r "react-native-pie" . -> ini buat cari per 1 repository
+
+
+// Log 09/06/2025
+- zidanewicaksono02@gmail.com

@@ -283,7 +283,7 @@ const RegisterScreen = ({ navigation }: any) => {
         <TouchableOpacity style={styles.button} onPress={handleRegister}>
           <Text style={styles.buttonText}>Daftar</Text>
         </TouchableOpacity>
-        <TouchableOpacity
+        {/* <TouchableOpacity
           onPress={() => {
           deleteAllUsers(
           () => alert('Semua data user berhasil dihapus'),
@@ -324,7 +324,7 @@ const RegisterScreen = ({ navigation }: any) => {
   style={[styles.button, { backgroundColor: '#444' }]}
 >
   <Text style={styles.buttonText}>Export DB ke Download</Text>
-</TouchableOpacity>
+</TouchableOpacity> */}
         <TouchableOpacity onPress={() => navigation.navigate('Login')} style={{ marginTop: 20 }}>
           <Text style={[styles.bottomText, { color: isDarkMode ? '#bbb' : '#666' }]}>Sudah punya akun? <Text style={styles.signUpLink}>Login di sini</Text></Text>
         </TouchableOpacity>

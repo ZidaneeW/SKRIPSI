@@ -80,7 +80,6 @@ import AdminUserList from './android/app/src/screens/AdminUserList';
 import EditNewProfile from './android/app/src/screens/EditNewProfile';
 import BottomTabNavigator from './android/app/src/screens/BottomTabNavigator';
 import OtpScreen from './android/app/src/screens/OtpScreen';
-
 import { createUserTable, createExpenseTable } from './android/app/src/db/db';
 
 enableScreens();
